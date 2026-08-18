@@ -36,3 +36,5 @@ def create_app(config_name=None):
         return jsonify({'durum': 'aktif', 'mesaj': 'SmartLead AI sunucusu calisiyor'}), 200
 
     return app
+# Render ve Gunicorn (app:app) uyumluluğu için
+app = create_app(os.environ.get('FLASK_ENV', 'production'))
