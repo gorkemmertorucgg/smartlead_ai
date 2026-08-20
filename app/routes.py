@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
 from app.database import lead_ekle, tum_leadler
-from services.ai_service import ai_service, AIServiceError
+from app.services.ai_service import ai_service, AIServiceError
 
 api_blueprint = Blueprint('api', __name__)
 sayfa_blueprint = Blueprint('sayfalar', __name__)
