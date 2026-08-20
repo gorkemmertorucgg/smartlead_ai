@@ -6,12 +6,14 @@ from app.database import init_db
 
 def create_app(config_name='default'):
     """Uygulama fabrikası (Application Factory)."""
-    app = Flask(__name__, template_folder='../templates')
+    # Templates klasörünün tam yolunu dinamik olarak belirle
+    template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
+    app = Flask(__name__, template_folder=template_dir)
     
     # 1. Konfigürasyonu yükle
     app.config.from_object(config_dict.get(config_name, config_dict['default']))
 
-    # 2. CORS aç (Wix bağlantısı için)
+    # 2. CORS aç
     CORS(app, origins="*", methods=["GET", "POST", "OPTIONS"])
 
     # 3. Veritabanını başlat
@@ -30,6 +32,6 @@ def create_app(config_name='default'):
 
     return app
 
-# Gunicorn (app:app) ve Render çalıştırma uyumluluğu için modül seviyesinde nesne:
+# Gunicorn (app:app) başlatıcı nesnesi
 env_mode = os.environ.get('FLASK_ENV', 'production')
 app = create_app(env_mode)
