@@ -6,7 +6,7 @@ class AIServiceError(Exception):
     pass
 
 class AIService:
-    """Groq LLaMA 3.1 LLM servisiyle haberleşen katman."""
+    """Groq LLaMA LLM servisiyle haberleşen katman."""
 
     def _sistem_talimati_al(self):
         return current_app.config.get('BUSINESS_CONTEXT', 'Sen PETWAP asistanısın.')
@@ -14,7 +14,6 @@ class AIService:
     def yanit_uret(self, mesaj, gecmis=None):
         api_key = current_app.config.get('GROQ_API_KEY', '')
         
-        # Anahtar yoksa çökmek yerine güvenli demo yanıtı döner
         if not api_key:
             return "PETWAP Demo Modu: Lütfen sunucunuza GROQ_API_KEY anahtarını tanımlayın."
 
@@ -33,7 +32,7 @@ class AIService:
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "llama3-8b-8192",
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 500
