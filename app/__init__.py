@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import config_dict
@@ -28,3 +29,7 @@ def create_app(config_name='default'):
         return jsonify({'durum': 'aktif', 'servis': 'PETWAP AI API', 'versiyon': '1.0.0'}), 200
 
     return app
+
+# Gunicorn (app:app) ve Render çalıştırma uyumluluğu için modül seviyesinde nesne:
+env_mode = os.environ.get('FLASK_ENV', 'production')
+app = create_app(env_mode)
