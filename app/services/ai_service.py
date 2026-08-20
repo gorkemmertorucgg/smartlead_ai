@@ -6,7 +6,7 @@ class AIServiceError(Exception):
     pass
 
 class AIService:
-    """Groq LLaMA 3.3 LLM servisiyle haberleşen katman."""
+    """Groq LLM servisiyle haberleşen katman."""
 
     def _sistem_talimati_al(self):
         return current_app.config.get('BUSINESS_CONTEXT', 'Sen PETWAP asistanısın.')
@@ -32,7 +32,7 @@ class AIService:
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "llama-3.3-70b-versatile",
+            "model": "mixtral-8x7b-32768",
             "messages": messages,
             "temperature": 0.7,
             "max_tokens": 500
