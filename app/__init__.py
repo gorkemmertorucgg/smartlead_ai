@@ -1,40 +1,30 @@
-import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import config_dict
 from app.database import init_db
 
-def create_app(config_name=None):
-    """
-    Uygulama Fabrikası fonksiyonu.
-    Tüm modülleri (CORS, DB, Rotalar) burada birleştirir.
-    """
-    if config_name is None:
-        config_name = os.environ.get('FLASK_ENV', 'development')
-
-    app = Flask(__name__, template_folder='templates')
-
+def create_app(config_name='default'):
+    """Uygulama fabrikası (Application Factory)."""
+    app = Flask(__name__, template_folder='../templates')
+    
     # 1. Konfigürasyonu yükle
-    app_config = config_dict.get(config_name, config_dict['default'])
-    app.config.from_object(app_config)
+    app.config.from_object(config_dict.get(config_name, config_dict['default']))
 
-    # 2. CORS izinlerini tanımla
-    CORS(app, origins=app.config.get('CORS_ORIGINS', '*'), methods=['GET', 'POST', 'OPTIONS'])
+    # 2. CORS aç (Wix bağlantısı için)
+    CORS(app, origins="*", methods=["GET", "POST", "OPTIONS"])
 
     # 3. Veritabanını başlat
     with app.app_context():
         init_db(app)
 
-    # 4. Blueprint rotalarını sisteme kaydet
-    from app.routes import pages_bp, api_bp
-    app.register_blueprint(pages_bp)
-    app.register_blueprint(api_bp, url_prefix='/api')
+    # 4. Blueprint'leri kaydet
+    from app.routes import api_blueprint, sayfa_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api')
+    app.register_blueprint(sayfa_blueprint)
 
-    # 5. Sunucu canlılık kontrol rotası
+    # 5. Canlılık kontrolü
     @app.route('/health')
-    def health():
-        return jsonify({'durum': 'aktif', 'mesaj': 'SmartLead AI sunucusu calisiyor'}), 200
+    def health_check():
+        return jsonify({'durum': 'aktif', 'servis': 'PETWAP AI API', 'versiyon': '1.0.0'}), 200
 
     return app
-# Render ve Gunicorn (app:app) uyumluluğu için
-app = create_app(os.environ.get('FLASK_ENV', 'production'))

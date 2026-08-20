@@ -1,20 +1,20 @@
 import sqlite3
+import os
 from flask import current_app
 
 def get_db():
-    """SQLite veritabanı bağlantısı açar ve satırlara isimle erişim sağlar."""
+    """Veritabanı bağlantısı açar ve satırlara sütun adıyla erişim sağlar."""
     db_path = current_app.config.get('DATABASE_URL', 'smartlead.db')
-    baglanti = sqlite3.connect(db_path)
-    baglanti.row_factory = sqlite3.Row
-    return baglanti
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-def init_db(app):
-    """leads tablosunu veritabanında oluşturur (yoksa)."""
-    db_path = app.config.get('DATABASE_URL', 'smartlead.db')
-    baglanti = sqlite3.connect(db_path)
-    imlec = baglanti.cursor()
-    
-    imlec.execute('''
+def init_db(app=None):
+    """'leads' tablosunu oluşturur (yoksa)."""
+    db_path = app.config.get('DATABASE_URL', 'smartlead.db') if app else 'smartlead.db'
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS leads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             isim TEXT NOT NULL,
@@ -23,35 +23,29 @@ def init_db(app):
             tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
-    baglanti.commit()
-    baglanti.close()
+    conn.commit()
+    conn.close()
 
-def lead_ekle(isim, telefon, mesaj=""):
-    """
-    Yeni bir müşteri adayını güvenli parametrelerle (?) veritabanına ekler.
-    """
-    baglanti = get_db()
-    imlec = baglanti.cursor()
-    
-    imlec.execute(
+def lead_ekle(isim, telefon, mesaj=''):
+    """Yeni bir müşteri adayı (lead) kaydeder. SQL Injection korumalıdır."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
         'INSERT INTO leads (isim, telefon, mesaj) VALUES (?, ?, ?)',
         (isim, telefon, mesaj)
     )
-    
-    baglanti.commit()
-    yeni_id = imlec.lastrowid
-    baglanti.close()
+    conn.commit()
+    yeni_id = cursor.lastrowid
+    conn.close()
     return yeni_id
 
 def tum_leadler():
-    """Tüm kayıtları en yeniden eskiye doğru listeler."""
-    baglanti = get_db()
-    imlec = baglanti.cursor()
-    
-    imlec.execute('SELECT * FROM leads ORDER BY tarih DESC')
-    satirlar = imlec.fetchall()
-    baglanti.close()
+    """Tüm kayıtları en yeniden eskiye doğru liste olarak döndürür."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, isim, telefon, mesaj, tarih FROM leads ORDER BY tarih DESC')
+    satirlar = cursor.fetchall()
+    conn.close()
     
     sonuc = []
     for satir in satirlar:
