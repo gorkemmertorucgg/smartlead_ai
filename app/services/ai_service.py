@@ -30,10 +30,13 @@ class AIService:
             "Authorization": f"Bearer {api_key.strip()}",
             "Content-Type": "application/json"
         }
+        
+        # Güncel ve aktif Groq modeli
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.3-70b-versatile",
             "messages": messages,
-            "temperature": 0.3
+            "temperature": 0.3,
+            "max_tokens": 150
         }
 
         try:
@@ -46,7 +49,7 @@ class AIService:
             data = response.json()
             ham_cevap = data["choices"][0]["message"]["content"]
             
-            # <think>...</think> düşünce sürecini temizle
+            # <think> düşünce bloklarını temizle
             temiz_cevap = re.sub(r'<think>.*?</think>', '', ham_cevap, flags=re.DOTALL).strip()
             
             return temiz_cevap
