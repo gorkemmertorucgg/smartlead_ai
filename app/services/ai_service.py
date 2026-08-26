@@ -7,7 +7,14 @@ class AIServiceError(Exception):
     pass
 
 class AIService:
-    def yanit_uret(self, kullanici_mesaji, sohbet_gecmisi=None):
+    def yanit_uret(self, mesaj=None, gecmis=None, kullanici_mesaji=None, sohbet_gecmisi=None, **kwargs):
+        # Parametre ismi uyumluluğu (mesaj veya kullanici_mesaji)
+        aktif_mesaj = mesaj or kullanici_mesaji
+        aktif_gecmis = gecmis or sohbet_gecmisi or []
+
+        if not aktif_mesaj:
+            return "Lütfen bir soru belirtin."
+
         api_key = current_app.config.get('GROQ_API_KEY')
         if not api_key:
             return "🐾 PETWAP Asistanı Demo Modunda: Lütfen .env dosyasında GROQ_API_KEY tanımlayınız."
@@ -15,9 +22,9 @@ class AIService:
         system_prompt = current_app.config.get('BUSINESS_CONTEXT')
         
         messages = [{"role": "system", "content": system_prompt}]
-        if sohbet_gecmisi:
-            messages.extend(sohbet_gecmisi)
-        messages.append({"role": "user", "content": kullanici_mesaji})
+        if aktif_gecmis:
+            messages.extend(aktif_gecmis)
+        messages.append({"role": "user", "content": aktif_mesaj})
 
         try:
             response = requests.post(
@@ -40,7 +47,7 @@ class AIService:
             data = response.json()
             ham_cevap = data["choices"][0]["message"]["content"]
             
-            # <think>...</think> arasındaki tüm düşünce bloklarını temizle
+            # <think>...</think> düşünce bloklarını temizle
             temiz_cevap = re.sub(r'<think>.*?</think>', '', ham_cevap, flags=re.DOTALL).strip()
             
             return temiz_cevap
