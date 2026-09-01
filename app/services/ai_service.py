@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from flask import current_app
 
@@ -23,7 +24,6 @@ Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinas
         )
 
     def _aktif_modeli_bul(self, api_key):
-        """Hesabındaki aktif modelleri listeler ve sadece metin sohbet modelini seçer."""
         if self._cached_model:
             return self._cached_model
 
@@ -32,28 +32,18 @@ Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinas
             res = requests.get(self.groq_models_url, headers=headers, timeout=10)
             if res.status_code == 200:
                 modeller = [m['id'] for m in res.json().get('data', [])]
-                print(f"\n[Groq] Hesabınızdaki Aktif Modeller: {modeller}\n")
                 
-                # Ses (whisper), güvenlik ve görüntü modellerini filtrele
-                gecerli_modeller = [
+                # Standart hızlı modeller
+                gecerli = [
                     m for m in modeller 
                     if not any(yasak in m.lower() for yasak in ['whisper', 'vision', 'guard', 'safeguard', 'embed'])
                 ]
                 
-                if gecerli_modeller:
-                    # Tercih edilen modeller varsa ilk onu seç
-                    for oncelik in ['llama', 'mixtral', 'gemma', 'qwen']:
-                        for m in gecerli_modeller:
-                            if oncelik in m.lower():
-                                self._cached_model = m
-                                print(f"[Groq] Seçilen Model: {self._cached_model}")
-                                return self._cached_model
-                    
-                    self._cached_model = gecerli_modeller[0]
-                    print(f"[Groq] Seçilen Model: {self._cached_model}")
+                if gecerli:
+                    self._cached_model = gecerli[0]
                     return self._cached_model
-        except Exception as e:
-            print(f"[Groq Model Arama Hatası]: {e}")
+        except Exception:
+            pass
             
         return "llama-3.1-8b-instant"
 
@@ -82,7 +72,7 @@ Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinas
         payload = {
             "model": secilen_model,
             "messages": messages,
-            "temperature": 0.4,
+            "temperature": 0.3,
             "max_tokens": 512
         }
 
@@ -94,7 +84,12 @@ Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinas
                 error_msg = response_data.get("error", {}).get("message", response.text)
                 raise AIServiceError(f"Groq API Hatası ({response.status_code}): {error_msg}")
 
-            return response_data["choices"][0]["message"]["content"]
+            ham_yanit = response_data["choices"][0]["message"]["content"]
+            
+            # <think> ... </think> arasındaki iç düşünceleri temizle
+            temiz_yanit = re.sub(r'<think>.*?</think>', '', ham_yanit, flags=re.DOTALL).strip()
+            return temiz_yanit if temiz_yanit else ham_yanit
+
         except requests.RequestException as e:
             raise AIServiceError(f"Yapay zekâ servisi bağlantı hatası: {str(e)}")
 
