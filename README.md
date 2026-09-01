@@ -1,26 +1,24 @@
-# SmartLead AI - Akıllı Müşteri Toplama ve Destek Asistanı
+# PETWAP - Akıllı Pati Asistanı & Lead Toplama Sistemi (SmartLead AI)
 
-SmartLead AI, web sitelerine gelen ziyaretçilerle doğal dilde sohbet ederek sorularını yanıtlayan ve potansiyel müşterilerin iletişim bilgilerini (Lead) toplayıp SQLite veritabanına kaydeden yapay zekâ destekli bir full-stack web uygulamasıdır.
+Bu proje, sokak hayvanlarının refahı, acil durum rehberliği ve saha gönüllü koordinasyonunu sağlamak amacıyla geliştirilmiş B2B/B2C yapay zekâ destekli müşteri adayı (lead) toplama sistemidir.
 
-## 🚀 Mimari ve Teknolojiler
+## 🚀 Kullanılan Teknolojiler & Mimari
+- **Backend:** Python, Flask (Application Factory & Blueprint deseni)
+- **Veritabanı:** SQLite (SQL Injection korumalı parametrik sorgular)
+- **Yapay Zekâ:** Groq API (Llama 3.x LLM Servisi)
+- **Frontend / Entegrasyon:** HTML5/CSS3 & Wix Velo (RESTful API Entegrasyonu)
+- **Yayınlama:** Render (Web Service) & GitHub
 
-* **Backend Framework:** Python Flask (Modüler Application Factory yapısı)
-* **Yapay Zekâ Motoru:** Groq Cloud API (`llama3-8b-8192` modeli)
-* **Veritabanı:** SQLite & Parametreli Güvenli SQL Sorguları
-* **Frontend:** Wix Platformu & Velo (JavaScript / `wix-fetch`)
-* **Canlı Dağıtım (Deployment):** Render Cloud Platform & Gunicorn WSGI
+## 📁 Mimari Yapı (Separation of Concerns)
+- `config.py`: Ortam değişkenleri ve PETWAP sistem talimatı (Business Context).
+- `app/database.py`: Yalnızca veritabanı CRUD işlemleri.
+- `app/routes.py`: HTTP rotaları ve hata yakalama katmanı.
+- `app/services/ai_service.py`: İzole yapay zekâ entegrasyonu.
+- `run.py`: Uygulama giriş noktası.
 
-## 🛠️ API Uç Noktaları (Endpoints)
-
-| Metot | Uç Nokta | Açıklama |
-| :--- | :--- | :--- |
-| `GET` | `/health` | Servis sağlık ve durum kontrolü |
-| `POST` | `/chat` | Groq LLM tabanlı sohbet yanıtı üretme |
-| `POST` | `/leads` | Müşteri bilgilerini doğrulayıp veritabanına kaydetme |
-| `GET` | `/dashboard` | Kayıtlı potansiyel müşterileri listeleme |
-
-## 🌐 Canlı Bağlantılar
-
-* **Canlı API Servisi:** `https://smartlead-ai-jaxv.onrender.com`
-* **Health Check:** `https://smartlead-ai-jaxv.onrender.com/health`
-* **Lead Dashboard:** `https://smartlead-ai-jaxv.onrender.com/dashboard`
+## 🛠️ Yerel Kurulum Adımları
+1. Depoyu klonlayın: `git clone <repo-url>`
+2. Sanal ortamı oluşturun ve aktif edin:
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate  # Windows
