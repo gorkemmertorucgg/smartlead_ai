@@ -1,105 +1,89 @@
 import os
-import re
 import requests
 from flask import current_app
 
 class AIServiceError(Exception):
+    """Yapay zekâ servisi hataları için özel istisna sınıfı."""
     pass
 
 class AIService:
     def __init__(self):
-        self.aktif_model = None
+        self.groq_chat_url = "https://api.groq.com/openai/v1/chat/completions"
+        self.groq_models_url = "https://api.groq.com/openai/v1/models"
+        self._cached_model = None
 
-    def _modeli_tespit_et(self, api_key):
-        """Groq hesabınızda anlık çalışan ve izinli olan modeli otomatik seçer."""
-        if self.aktif_model:
-            return self.aktif_model
+    def _sistem_talimati_al(self):
+        return current_app.config.get(
+            "BUSINESS_CONTEXT",
+            "Sen yardımsever ve profesyonel bir yapay zekâ asistanısın. Türkçe konuş."
+        )
 
-        headers = {
-            "Authorization": f"Bearer {api_key.strip()}",
-            "Content-Type": "application/json"
-        }
+    def _aktif_modeli_bul(self, api_key):
+        """Groq API'den o an aktif ve çalışan modelleri çekip en uygununu seçer."""
+        if self._cached_model:
+            return self._cached_model
 
+        headers = {"Authorization": f"Bearer {api_key}"}
         try:
-            res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=5)
+            res = requests.get(self.groq_models_url, headers=headers, timeout=10)
             if res.status_code == 200:
-                modeller = [m['id'] for m in res.json().get('data', []) if 'id' in m]
-                
-                # Tercih edilen kararlı model havuzu
-                tercihler = [
-                    "llama-3.3-70b-versatile",
-                    "llama-3.1-8b-instant",
-                    "llama3-8b-8192",
-                    "llama3-70b-8192",
-                    "mixtral-8x7b-32768",
-                    "gemma2-9b-it"
-                ]
-                
-                for t in tercihler:
-                    if t in modeller:
-                        self.aktif_model = t
-                        return t
-                
+                modeller = [m['id'] for m in res.json().get('data', [])]
+                # Öncelikli ve güncel sohbet modellerini tara
+                for aday in ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-70b-8192', 'mixtral-8x7b-32768']:
+                    if aday in modeller:
+                        self._cached_model = aday
+                        return aday
+                # Listeden ilk aktif modeli al
                 if modeller:
-                    self.aktif_model = modeller[0]
-                    return self.aktif_model
+                    self._cached_model = modeller[0]
+                    return modeller[0]
         except Exception:
             pass
+        return "llama-3.3-70b-versatile"
 
-        return "llama3-8b-8192"
+    def _groq_cagir(self, mesaj, gecmis=None):
+        api_key = current_app.config.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY", "")
 
-    def yanit_uret(self, mesaj=None, gecmis=None, kullanici_mesaji=None, sohbet_gecmisi=None, **kwargs):
-        aktif_mesaj = mesaj or kullanici_mesaji
-        aktif_gecmis = gecmis or sohbet_gecmisi or []
-
-        if not aktif_mesaj:
-            return "Lütfen bir soru belirtin."
-
-        api_key = current_app.config.get('GROQ_API_KEY')
         if not api_key:
-            return "🐾 PETWAP Asistanı Demo Modunda: Lütfen Render Environment ayarlarında GROQ_API_KEY tanımlayınız."
+            return "Sistem şu anda demo modunda çalışmaktadır. Lütfen .env dosyanızdaki GROQ_API_KEY anahtarını kontrol edin."
 
-        system_prompt = current_app.config.get('BUSINESS_CONTEXT')
-        
-        messages = [{"role": "system", "content": system_prompt}]
-        if aktif_gecmis:
-            messages.extend(aktif_gecmis)
-        messages.append({"role": "user", "content": aktif_mesaj})
+        messages = [{"role": "system", "content": self._sistem_talimati_al()}]
 
-        secilen_model = self._modeli_tespit_et(api_key)
-        url = "https://api.groq.com/openai/v1/chat/completions"
+        if gecmis and isinstance(gecmis, list):
+            for item in gecmis:
+                if isinstance(item, dict) and "role" in item and "content" in item:
+                    messages.append(item)
+
+        messages.append({"role": "user", "content": mesaj})
+
         headers = {
-            "Authorization": f"Bearer {api_key.strip()}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
+
+        secilen_model = self._aktif_modeli_bul(api_key)
+
         payload = {
             "model": secilen_model,
             "messages": messages,
-            "temperature": 0.3,
-            "max_tokens": 150
+            "temperature": 0.7,
+            "max_tokens": 1024
         }
 
         try:
-            response = requests.post(url, headers=headers, json=payload, timeout=15)
-
-            # İlk model hata verirse genel llama3-8b-8192 ile son bir deneme yap
-            if response.status_code != 200:
-                payload["model"] = "llama3-8b-8192"
-                response = requests.post(url, headers=headers, json=payload, timeout=15)
+            response = requests.post(self.groq_chat_url, headers=headers, json=payload, timeout=20)
+            response_data = response.json()
 
             if response.status_code != 200:
-                raise AIServiceError(f"Groq API Hatası ({response.status_code}): {response.text}")
+                error_msg = response_data.get("error", {}).get("message", response.text)
+                raise AIServiceError(f"Groq API Hatası ({response.status_code}): {error_msg}")
 
-            data = response.json()
-            ham_cevap = data["choices"][0]["message"]["content"]
-            
-            # <think>...</think> düşünce zincirini filtrele
-            temiz_cevap = re.sub(r'<think>.*?</think>', '', ham_cevap, flags=re.DOTALL).strip()
-            return temiz_cevap
-            
-        except requests.exceptions.RequestException as e:
-            raise AIServiceError(f"Bağlantı hatası: {str(e)}")
-        except Exception as e:
-            raise AIServiceError(f"Yapay zekâ servisine ulaşılamadı: {str(e)}")
+            return response_data["choices"][0]["message"]["content"]
+        except requests.RequestException as e:
+            raise AIServiceError(f"Yapay zekâ servisi bağlantı hatası: {str(e)}")
+
+    def yanit_uret(self, mesaj, gecmis=None):
+        return self._groq_cagir(mesaj, gecmis)
 
 ai_service = AIService()
+yapay_zeka_servisi = ai_service
