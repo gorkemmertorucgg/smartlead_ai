@@ -16,12 +16,12 @@ Bu proje, sokak hayvanlarının refahı, acil durum rehberliği ve saha gönüll
 - `app/services/ai_service.py`: İzole yapay zekâ entegrasyonu.
 - `run.py`: Uygulama giriş noktası.
 
-## 🛠️ Yerel Kurulum Adımları
-1. Depoyu klonlayın: `git clone <repo-url>`
-2. Sanal ortamı oluşturun ve aktif edin:
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate  # Windows
+## 💡 Repository Dil Dağılımı ve Frontend Notu!
+Bu proje temelde Flask tabanlı bir **RESTful Backend & API** servisidir. GitHub istatistiklerinde görülen **HTML/CSS** oranı; sistemin Wix Velo entegrasyonu öncesinde yerel ortamda uçtan uca test edilebilmesi amacıyla hazırlanan karşılama sayfası (`index.html`) ve yönetim paneli (`dashboard.html`) şablonlarının satır yoğunluğundan kaynaklanmaktadır. İş mantığı, veritabanı CRUD operasyonları ve yapay zekâ entegrasyonu tamamen **Python** katmanında koşmaktadır.
 
-## Repository Dil Dağılımı ve Frontend Notu
-Bu proje temelde Flask tabanlı bir **RESTful Backend & API** servisidir. GitHub istatistiklerinde görülen **HTML/CSS** oranı; sistemin Wix Velo entegrasyonu öncesinde yerel ortamda uçtan uca test edilebilmesi amacıyla hazırlanan karşılama sayfası (`index.html`) ve yönetim paneli (`dashboard.html`) şablonlarının satır yoğunluğundan kaynaklanmaktadır. İş mantığı, veri tabanı CRUD operasyonları ve yapay zekâ entegrasyonu tamamen **Python** katmanında koşmaktadır.
+## 🛠️ Yerel Kurulum Adımları
+
+1. Depoyu klonlayın:
+```bash
+git clone [https://github.com/gorkemmertorucgg/smartlead_ai.git](https://github.com/gorkemmertorucgg/smartlead_ai.git)
+cd smartlead_ai
