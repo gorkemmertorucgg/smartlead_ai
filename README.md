@@ -22,3 +22,6 @@ Bu proje, sokak hayvanlarının refahı, acil durum rehberliği ve saha gönüll
    ```bash
    python -m venv venv
    venv\Scripts\activate  # Windows
+
+## Repository Dil Dağılımı ve Frontend Notu
+Bu proje temelde Flask tabanlı bir **RESTful Backend & API** servisidir. GitHub istatistiklerinde görülen **HTML/CSS** oranı; sistemin Wix Velo entegrasyonu öncesinde yerel ortamda uçtan uca test edilebilmesi amacıyla hazırlanan karşılama sayfası (`index.html`) ve yönetim paneli (`dashboard.html`) şablonlarının satır yoğunluğundan kaynaklanmaktadır. İş mantığı, veri tabanı CRUD operasyonları ve yapay zekâ entegrasyonu tamamen **Python** katmanında koşmaktadır.
