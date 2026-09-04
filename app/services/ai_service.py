@@ -10,8 +10,8 @@ class AIServiceError(Exception):
 class AIService:
     def __init__(self):
         self.groq_chat_url = "https://api.groq.com/openai/v1/chat/completions"
-        self.groq_models_url = "https://api.groq.com/openai/v1/models"
-        self._cached_model = None
+        # Groq'un güncel ve aktif üretim modeli
+        self.model = "openai/gpt-oss-20b"
 
     def _sistem_talimati_al(self):
         return current_app.config.get(
@@ -22,31 +22,6 @@ Kişilik: Çok kibar, sevecen, profesyonel ve çözüm odaklı bir dille Türkç
 UZUNLUK KURALI: Tüm yanıtlarını kesinlikle en fazla 2-3 kısa cümle ve maksimum 40-50 kelime ile sınırla.
 Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinasyon için alttaki formdan iletişim bırakabileceklerini tek cümleyle hatırlat."""
         )
-
-    def _aktif_modeli_bul(self, api_key):
-        if self._cached_model:
-            return self._cached_model
-
-        headers = {"Authorization": f"Bearer {api_key}"}
-        try:
-            res = requests.get(self.groq_models_url, headers=headers, timeout=10)
-            if res.status_code == 200:
-                modeller = [m['id'] for m in res.json().get('data', [])]
-                
-                # Ses, güvenlik, onay gerektiren veya sohbet dışı modelleri filtrele
-                yasakli = ['whisper', 'vision', 'guard', 'safeguard', 'embed', 'orpheus', 'canopy']
-                sohbet_modelleri = [
-                    m for m in modeller 
-                    if not any(yasak in m.lower() for yasak in yasakli)
-                ]
-                
-                if sohbet_modelleri:
-                    self._cached_model = sohbet_modelleri[0]
-                    return self._cached_model
-        except Exception:
-            pass
-            
-        return "deepseek-r1-distill-llama-70b"
 
     def _groq_cagir(self, mesaj, gecmis=None):
         api_key = current_app.config.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY", "")
@@ -68,28 +43,24 @@ Yönlendirme: Soruyu kısaca yanıtladıktan sonra, saha desteği veya koordinas
             "Content-Type": "application/json"
         }
 
-        secilen_model = self._aktif_modeli_bul(api_key)
-
         payload = {
-            "model": secilen_model,
+            "model": self.model,
             "messages": messages,
             "temperature": 0.3,
-            "max_tokens": 512
+            "max_tokens": 256
         }
 
         try:
-            response = requests.post(self.groq_chat_url, headers=headers, json=payload, timeout=20)
+            response = requests.post(self.groq_chat_url, headers=headers, json=payload, timeout=15)
             response_data = response.json()
 
             if response.status_code != 200:
                 error_msg = response_data.get("error", {}).get("message", response.text)
                 raise AIServiceError(f"Groq API Hatası ({response.status_code}): {error_msg}")
 
-            ham_yanit = response_data["choices"][0]["message"]["content"]
-            
-            # İç düşünme etiketlerini (<think>) tamamen temizler
-            temiz_yanit = re.sub(r'<think>.*?</think>', '', ham_yanit, flags=re.DOTALL).strip()
-            return temiz_yanit if temiz_yanit else ham_yanit
+            ham_cevap = response_data["choices"][0]["message"]["content"]
+            temiz_cevap = re.sub(r'<think>.*?</think>', '', ham_cevap, flags=re.DOTALL).strip()
+            return temiz_cevap if temiz_cevap else ham_cevap.strip()
 
         except requests.RequestException as e:
             raise AIServiceError(f"Yapay zekâ servisi bağlantı hatası: {str(e)}")
