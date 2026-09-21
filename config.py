@@ -37,8 +37,12 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
 
-config_by_name = {
+# Render ve app/__init__.py dosyasinin bekledigi sozluk ismi
+config_dict = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
+# Yedek olarak config_by_name de kalsin
+config_by_name = config_dict
